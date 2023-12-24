@@ -49,7 +49,9 @@ def submit():
 
     t1 = Thread(target=main_scrape,args=[sheet_url,URLS])
     # t1 = Thread(target=main_scrape,args=[url,query])
+    print(f"Thread {t1.name} started.")
     t1.start()
+    # main_scrape(sheet_url, URLS);
     while len(sheet_url) == 0:
         None
     # text = (','.join(URLS))
@@ -96,11 +98,12 @@ def main_scrape(sheet_url,URLS):
 
     try:
 
-        websites=[]
+        row = 2
         for URL1 in URLS:
             sleep(5)
             print("working on wesite: ", URL1)
-            
+            current_thread_name = current_thread().name
+            print(f"Thread {current_thread_name} started.")
             # sleep(10)
 
             # removing http:// and https:// and www. from the SLUG_URL using urlparse
@@ -137,6 +140,7 @@ def main_scrape(sheet_url,URLS):
 
             # i = 2    
             # print("going in block loop")
+            websites=[]
             for block in panels_blocks:
                 # sleep(3)
                 # print("inside block loop")
@@ -146,7 +150,9 @@ def main_scrape(sheet_url,URLS):
                 website_url = website_name
                 if len(links)>1:
                     website_url = links[1].get('href')
-                websites.append(website_url)
+                if "url=" in website_url:
+                    website_url = website_url.split("url=")[1]    
+                websites.append([URL1,website_url])
                 # wks.append_table(values=[[website_name, website_url, website_sitelike_url]])
 
                 # row = 'A' + str(i)
@@ -154,22 +160,28 @@ def main_scrape(sheet_url,URLS):
                 # i = i+1
                 print("data added to sheet for website: ",website_url)
                 # print(website_name,'----->', website_sitelike_url, '----->',website_url)
-
+            
+            number = len(websites)
+            wks.insert_rows(row=row, number=number, values = websites, inherit=False)
+            row = row + number
+            # wks.append_table(values=websites, start='A', end=None, dimension='ROWS', overwrite=False)
         
             gsheet_link = sh.url + '/view#gid=' + str(wks.id)
             print('Sheet Link for', SLUG_URL, ': ', gsheet_link)
         # sleep(10)
         # wks.insert_cols(1, number=len(websites), values=websites, inherit=False)
-        wks.insert_cols(1, number=2, values=websites, inherit=False)
+        # wks.insert_cols(1, number=2, values=websites, inherit=False)
         # wks.insertRows(wks.getLastRow(), websites.length)
 
         # sleep(2)
 
-        return {"gsheet_link": sheet_link}
+        return {"gsheet_link": sheet_link} 
 
     except Exception as e:
+        print("ERROR!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
         print(e)
-        return  jsonify({"status": "error", "message": "Error in Scrapping data"})
+        with app.app_context():
+          return  jsonify({"status": "error", "message": "Error in Scrapping data"})
 
 
 
